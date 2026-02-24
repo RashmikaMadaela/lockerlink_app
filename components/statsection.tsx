@@ -1,40 +1,37 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import "../global.css";
 
 type Props = {
   title: string;
-  data: any;
+  data: string | number;
   icon: any;
+  color?: string;
 };
 
-export default function StatSection({ title, data, icon }: Props) {
+export default function StatSection({
+  title,
+  data,
+  icon,
+  color = "#ffd33d",
+}: Props) {
   return (
-    <View style={styles.statContainer}>
-      <View style={styles.stat}>
-        <MaterialIcons name={icon} size={38} color="#25292e" />
-        <Text>{title}</Text>
-        <Text>{data}</Text>
+    <View
+      className="bg-white rounded-2xl p-4 m-2"
+      style={{ width: 160, minHeight: 140 }}
+    >
+      <View className="items-center justify-center flex-1">
+        <View
+          className="rounded-full p-3 mb-3"
+          style={{ backgroundColor: color + "20" }}
+        >
+          <MaterialIcons name={icon} size={32} color={color} />
+        </View>
+        <Text className="text-3xl font-bold text-gray-800 mb-1">{data}</Text>
+        <Text className="text-xs text-gray-500 text-center font-medium">
+          {title}
+        </Text>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  statContainer: {
-    width: 250,
-    height: 120,
-    marginHorizontal: 60,
-    marginVertical: 10,
-    borderWidth: 4,
-    borderColor: "#ffd33d",
-    borderRadius: 10,
-    padding: 3,
-  },
-  stat: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 10,
-    backgroundColor: "#fff",
-  },
-});
