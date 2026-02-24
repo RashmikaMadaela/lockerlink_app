@@ -1,10 +1,63 @@
+import AddDeliveryModal from "@/components/adddeliverymodal";
 import CircleButton from "@/components/circlebutton";
 import DeliveryCardSection from "@/components/deliverycardsection";
 import StatSection from "@/components/statsection";
+import { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import "../../global.css";
 
+type Delivery = {
+  title: string;
+  status: "pending" | "delivered" | "picked-up";
+  otp: string;
+  description?: string;
+  coolingNeeded?: boolean;
+};
+
 export default function Home() {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [deliveries, setDeliveries] = useState<Delivery[]>([
+    {
+      title: "Electronics Package",
+      status: "pending",
+      otp: "1234",
+    },
+    {
+      title: "Amazon Delivery",
+      status: "pending",
+      otp: "5678",
+    },
+    {
+      title: "Food Delivery",
+      status: "delivered",
+      otp: "9012",
+    },
+    {
+      title: "Clothing Package",
+      status: "pending",
+      otp: "3456",
+    },
+  ]);
+
+  const handleAddDelivery = (newDelivery: {
+    title: string;
+    description: string;
+    coolingNeeded: boolean;
+    otp: string;
+  }) => {
+    const delivery: Delivery = {
+      title: newDelivery.title,
+      status: "pending",
+      otp: newDelivery.otp,
+      description: newDelivery.description,
+      coolingNeeded: newDelivery.coolingNeeded,
+    };
+
+    setDeliveries([delivery, ...deliveries]);
+  };
+
+  const pendingCount = deliveries.filter((d) => d.status === "pending").length;
+
   return (
     <View className="flex-1 bg-gray-50">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -25,13 +78,13 @@ export default function Home() {
             />
             <StatSection
               title="Occupied"
-              data="8/12"
+              data={`1/2`}
               icon="lock-clock"
               color="#3b82f6"
             />
             <StatSection
               title="Pending"
-              data="4"
+              data={pendingCount}
               icon="local-shipping"
               color="#f59e0b"
             />
@@ -49,7 +102,7 @@ export default function Home() {
           <Text className="text-sm font-semibold text-gray-500 mb-3 ml-1">
             ACTIVE DELIVERIES
           </Text>
-          <DeliveryCardSection />
+          <DeliveryCardSection deliveries={deliveries} />
         </View>
       </ScrollView>
 
@@ -64,8 +117,15 @@ export default function Home() {
           alignItems: "center",
         }}
       >
-        <CircleButton onPress={() => alert("Add new delivery")} />
+        <CircleButton onPress={() => setModalVisible(true)} />
       </View>
+
+      {/* Add Delivery Modal */}
+      <AddDeliveryModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSubmit={handleAddDelivery}
+      />
     </View>
   );
 }

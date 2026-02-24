@@ -5,15 +5,11 @@ import "../global.css";
 type Props = {
   action?: "opened" | "closed" | "delivery" | "pickup";
   timestamp?: string;
-  lockerNumber?: number;
-  user?: string;
 };
 
 export default function LogCard({
   action = "opened",
   timestamp = "10/02 10:27 AM",
-  lockerNumber = 5,
-  user = "System",
 }: Props) {
   const actionConfig = {
     opened: {
@@ -60,15 +56,6 @@ export default function LogCard({
           <View className="flex-row items-center">
             <MaterialIcons name="schedule" size={14} color="#9ca3af" />
             <Text className="text-sm text-gray-500 ml-1">{timestamp}</Text>
-          </View>
-          <View className="flex-row items-center mt-1">
-            <MaterialIcons name="inbox" size={14} color="#9ca3af" />
-            <Text className="text-sm text-gray-500 ml-1">
-              Locker #{lockerNumber}
-            </Text>
-            <Text className="text-sm text-gray-400 mx-2">•</Text>
-            <MaterialIcons name="person" size={14} color="#9ca3af" />
-            <Text className="text-sm text-gray-500 ml-1">{user}</Text>
           </View>
         </View>
       </View>

@@ -1,22 +1,21 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import "../global.css";
+import OTPModal from "./otpmodal";
 
 type Props = {
   title?: string;
   status?: "pending" | "delivered" | "picked-up";
   otp?: string;
-  lockerNumber?: number;
-  timestamp?: string;
 };
 
 export default function DeliveryCard({
   title = "Package Delivery",
   status = "pending",
   otp = "1234",
-  lockerNumber = 5,
-  timestamp = "2 hours ago",
 }: Props) {
+  const [showOTPModal, setShowOTPModal] = useState(false);
   const statusConfig = {
     pending: {
       color: "#f59e0b",
@@ -41,55 +40,61 @@ export default function DeliveryCard({
   const config = statusConfig[status];
 
   return (
-    <Pressable
-      onPress={() => alert(`OTP: ${otp}\nLocker: #${lockerNumber}`)}
-      className="active:opacity-70"
-    >
-      <View className="bg-white rounded-2xl p-4 mb-3 border border-gray-100">
-        <View className="flex-row items-center justify-between mb-3">
-          <View className="flex-1">
-            <Text className="text-lg font-bold text-gray-800">{title}</Text>
-            <Text className="text-sm text-gray-500">{timestamp}</Text>
-          </View>
-          <View
-            className="rounded-full p-2"
-            style={{ backgroundColor: config.bg }}
-          >
-            <MaterialIcons name={config.icon} size={24} color={config.color} />
-          </View>
-        </View>
-
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center">
-            <MaterialIcons name="inbox" size={18} color="#6b7280" />
-            <Text className="text-sm text-gray-600 ml-2">
-              Locker #{lockerNumber}
-            </Text>
-          </View>
-          <View
-            className="px-3 py-1 rounded-full"
-            style={{ backgroundColor: config.bg }}
-          >
-            <Text
-              className="text-xs font-semibold"
-              style={{ color: config.color }}
+    <>
+      <Pressable
+        onPress={() => setShowOTPModal(true)}
+        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+      >
+        <View className="bg-white rounded-2xl shadow-md p-4 mb-3 border border-gray-100">
+          <View className="flex-row items-center justify-between mb-3">
+            <View className="flex-1">
+              <Text className="text-lg font-bold text-gray-800">{title}</Text>
+            </View>
+            <View
+              className="rounded-full p-2"
+              style={{ backgroundColor: config.bg }}
             >
-              {config.text}
-            </Text>
+              <MaterialIcons
+                name={config.icon}
+                size={24}
+                color={config.color}
+              />
+            </View>
           </View>
-        </View>
 
-        {status === "pending" && (
-          <View className="mt-3 pt-3 border-t border-gray-100">
-            <View className="flex-row items-center justify-center">
-              <MaterialIcons name="touch-app" size={16} color="#3b82f6" />
-              <Text className="text-sm text-blue-500 font-medium ml-2">
-                Tap to view OTP
+          <View className="flex-row items-center justify-between">
+            <View
+              className="px-3 py-1 rounded-full"
+              style={{ backgroundColor: config.bg }}
+            >
+              <Text
+                className="text-xs font-semibold"
+                style={{ color: config.color }}
+              >
+                {config.text}
               </Text>
             </View>
           </View>
-        )}
-      </View>
-    </Pressable>
+
+          {status === "pending" && (
+            <View className="mt-3 pt-3 border-t border-gray-100">
+              <View className="flex-row items-center justify-center">
+                <MaterialIcons name="touch-app" size={16} color="#3b82f6" />
+                <Text className="text-sm text-blue-500 font-medium ml-2">
+                  Tap to view OTP
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
+      </Pressable>
+
+      <OTPModal
+        visible={showOTPModal}
+        onClose={() => setShowOTPModal(false)}
+        otp={otp}
+        title={title}
+      />
+    </>
   );
 }
