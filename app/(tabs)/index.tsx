@@ -1,6 +1,7 @@
 import CircleButton from "@/components/circlebutton";
 import StatSection from "@/components/statsection";
 import { View } from "react-native";
+import "../../global.css";
 
 export default function Home() {
   return (
