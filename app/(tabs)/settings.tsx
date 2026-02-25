@@ -65,18 +65,18 @@ export default function Settings() {
         </Text>
         <SettingItem
           icon="lock-open"
-          title="Open All Doors"
-          subtitle="Emergency access to all lockers"
+          title="Open Door"
+          subtitle="Emergency access to the Door"
           onPress={() =>
             Alert.alert(
-              "Open All Doors",
-              "This will unlock every locker compartment. Continue?",
+              "Open Door",
+              "This will unlock the main door. Continue?",
               [
                 { text: "Cancel", style: "cancel" },
                 {
-                  text: "Open All",
+                  text: "Open Door",
                   style: "destructive",
-                  onPress: () => sendCommand("openAll", true),
+                  onPress: () => sendCommand("openDoor", true),
                 },
               ],
             )

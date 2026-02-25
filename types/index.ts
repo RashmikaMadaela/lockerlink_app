@@ -35,7 +35,7 @@ export type Telemetry = {
 };
 
 export type DeviceCommands = {
-  openAll: boolean;
+  openDoor: boolean;
   reset: boolean;
   cooling: boolean;
 };
