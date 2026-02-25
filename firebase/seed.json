@@ -1,0 +1,80 @@
+{
+  "lockerlink": {
+    "device": {
+      "telemetry": {
+        "battery": 85,
+        "temperature": 24,
+        "lastSeen": 1740470400000
+      },
+      "slots": {
+        "slot_1": {
+          "occupied": false,
+          "doorStatus": "locked"
+        },
+        "slot_2": {
+          "occupied": false,
+          "doorStatus": "locked"
+        }
+      },
+      "commands": {
+        "openAll": false,
+        "reset": false,
+        "cooling": false
+      }
+    },
+    "deliveries": {
+      "delivery_001": {
+        "title": "Amazon Package",
+        "description": "Handle with care",
+        "status": "pending",
+        "otp": "4821",
+        "slotId": "slot_1",
+        "coolingNeeded": false,
+        "createdAt": 1740470400000,
+        "deliveredAt": null,
+        "pickedUpAt": null
+      },
+      "delivery_002": {
+        "title": "Food Delivery",
+        "description": "Keep refrigerated",
+        "status": "delivered",
+        "otp": "3357",
+        "slotId": "slot_2",
+        "coolingNeeded": true,
+        "createdAt": 1740384000000,
+        "deliveredAt": 1740387600000,
+        "pickedUpAt": null
+      }
+    },
+    "otpIndex": {
+      "4821": "delivery_001",
+      "3357": "delivery_002"
+    },
+    "logs": {
+      "log_001": {
+        "action": "delivery",
+        "slotId": "slot_1",
+        "deliveryId": "delivery_001",
+        "timestamp": 1740470400000
+      },
+      "log_002": {
+        "action": "delivery",
+        "slotId": "slot_2",
+        "deliveryId": "delivery_002",
+        "timestamp": 1740384000000
+      },
+      "log_003": {
+        "action": "opened",
+        "slotId": "slot_2",
+        "deliveryId": null,
+        "timestamp": 1740387600000
+      },
+      "log_004": {
+        "action": "closed",
+        "slotId": "slot_2",
+        "deliveryId": null,
+        "timestamp": 1740387660000
+      }
+    }
+  }
+}
