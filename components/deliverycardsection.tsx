@@ -1,14 +1,7 @@
+import { Delivery } from "@/types";
 import { Text, View } from "react-native";
 import "../global.css";
 import DeliveryCard from "./deliverycard";
-
-type Delivery = {
-  title: string;
-  status: "pending" | "delivered" | "picked-up";
-  otp: string;
-  description?: string;
-  coolingNeeded?: boolean;
-};
 
 type Props = {
   deliveries: Delivery[];
@@ -25,8 +18,8 @@ export default function DeliveryCardSection({ deliveries }: Props) {
 
   return (
     <View className="flex flex-col w-full">
-      {deliveries.map((delivery, index) => (
-        <DeliveryCard key={index} {...delivery} />
+      {deliveries.map((delivery) => (
+        <DeliveryCard key={delivery.id} {...delivery} />
       ))}
     </View>
   );

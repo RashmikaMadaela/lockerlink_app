@@ -1,34 +1,22 @@
 import LogCard from "@/components/logcard";
-import { ScrollView, Text, View } from "react-native";
+import { subscribeToLogs } from "@/firebase/db";
+import { LogEntry } from "@/types";
+import { formatTimestamp } from "@/utils/lockerUtils";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import "../../global.css";
 
 export default function History() {
-  const logs = [
-    {
-      action: "pickup" as const,
-      timestamp: "Today 10:27 AM",
-    },
-    {
-      action: "delivery" as const,
-      timestamp: "Today 08:15 AM",
-    },
-    {
-      action: "opened" as const,
-      timestamp: "Yesterday 06:45 PM",
-    },
-    {
-      action: "closed" as const,
-      timestamp: "Yesterday 06:46 PM",
-    },
-    {
-      action: "delivery" as const,
-      timestamp: "Yesterday 02:30 PM",
-    },
-    {
-      action: "pickup" as const,
-      timestamp: "Yesterday 11:20 AM",
-    },
-  ];
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToLogs((data) => {
+      setLogs(data);
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -37,8 +25,23 @@ export default function History() {
           <Text className="text-sm font-semibold text-gray-500 mb-3 ml-1">
             RECENT ACTIVITY
           </Text>
-          {logs.map((log, index) => (
-            <LogCard key={index} {...log} />
+
+          {loading && (
+            <ActivityIndicator size="small" color="#3b82f6" className="mt-8" />
+          )}
+
+          {!loading && logs.length === 0 && (
+            <Text className="text-center text-gray-400 mt-8">
+              No activity yet.
+            </Text>
+          )}
+
+          {logs.map((log) => (
+            <LogCard
+              key={log.id}
+              action={log.action}
+              timestamp={formatTimestamp(log.timestamp)}
+            />
           ))}
         </View>
       </ScrollView>

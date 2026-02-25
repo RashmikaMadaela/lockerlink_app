@@ -1,5 +1,6 @@
+import { sendCommand } from "@/firebase/db";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import "../../global.css";
 
 type SettingItemProps = {
@@ -66,14 +67,40 @@ export default function Settings() {
           icon="lock-open"
           title="Open All Doors"
           subtitle="Emergency access to all lockers"
-          onPress={() => alert("Opening all doors...")}
+          onPress={() =>
+            Alert.alert(
+              "Open All Doors",
+              "This will unlock every locker compartment. Continue?",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Open All",
+                  style: "destructive",
+                  onPress: () => sendCommand("openAll", true),
+                },
+              ],
+            )
+          }
           color="#ef4444"
         />
         <SettingItem
           icon="refresh"
           title="Reset System"
           subtitle="Restart locker system"
-          onPress={() => alert("Resetting system...")}
+          onPress={() =>
+            Alert.alert(
+              "Reset System",
+              "This will restart the locker device. Continue?",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Reset",
+                  style: "destructive",
+                  onPress: () => sendCommand("reset", true),
+                },
+              ],
+            )
+          }
           color="#f59e0b"
         />
 

@@ -2,61 +2,36 @@ import AddDeliveryModal from "@/components/adddeliverymodal";
 import CircleButton from "@/components/circlebutton";
 import DeliveryCardSection from "@/components/deliverycardsection";
 import StatSection from "@/components/statsection";
-import { useState } from "react";
+import {
+  subscribeToDeliveries,
+  subscribeToSlots,
+  subscribeToTelemetry,
+} from "@/firebase/db";
+import { Delivery, SlotStatus, Telemetry } from "@/types";
+import { useEffect, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import "../../global.css";
 
-type Delivery = {
-  title: string;
-  status: "pending" | "delivered" | "picked-up";
-  otp: string;
-  description?: string;
-  coolingNeeded?: boolean;
-};
-
 export default function Home() {
   const [modalVisible, setModalVisible] = useState(false);
-  const [deliveries, setDeliveries] = useState<Delivery[]>([
-    {
-      title: "Electronics Package",
-      status: "pending",
-      otp: "1234",
-    },
-    {
-      title: "Amazon Delivery",
-      status: "pending",
-      otp: "5678",
-    },
-    {
-      title: "Food Delivery",
-      status: "delivered",
-      otp: "9012",
-    },
-    {
-      title: "Clothing Package",
-      status: "pending",
-      otp: "3456",
-    },
-  ]);
+  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [telemetry, setTelemetry] = useState<Telemetry | null>(null);
+  const [slots, setSlots] = useState<Record<string, SlotStatus>>({});
 
-  const handleAddDelivery = (newDelivery: {
-    title: string;
-    description: string;
-    coolingNeeded: boolean;
-    otp: string;
-  }) => {
-    const delivery: Delivery = {
-      title: newDelivery.title,
-      status: "pending",
-      otp: newDelivery.otp,
-      description: newDelivery.description,
-      coolingNeeded: newDelivery.coolingNeeded,
+  useEffect(() => {
+    const unsubDeliveries = subscribeToDeliveries(setDeliveries);
+    const unsubTelemetry = subscribeToTelemetry(setTelemetry);
+    const unsubSlots = subscribeToSlots(setSlots);
+    return () => {
+      unsubDeliveries();
+      unsubTelemetry();
+      unsubSlots();
     };
-
-    setDeliveries([delivery, ...deliveries]);
-  };
+  }, []);
 
   const pendingCount = deliveries.filter((d) => d.status === "pending").length;
+  const totalSlots = Math.max(Object.keys(slots).length, 2);
+  const occupiedCount = Object.values(slots).filter((s) => s.occupied).length;
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -72,13 +47,13 @@ export default function Home() {
           >
             <StatSection
               title="Battery"
-              data="87%"
+              data={telemetry ? `${telemetry.battery}%` : "--"}
               icon="battery-std"
               color="#10b981"
             />
             <StatSection
               title="Occupied"
-              data={`1/2`}
+              data={`${occupiedCount}/${totalSlots}`}
               icon="lock-clock"
               color="#3b82f6"
             />
@@ -90,7 +65,7 @@ export default function Home() {
             />
             <StatSection
               title="Temperature"
-              data="24°C"
+              data={telemetry ? `${telemetry.temperature}°C` : "--"}
               icon="thermostat"
               color="#ef4444"
             />
@@ -124,7 +99,6 @@ export default function Home() {
       <AddDeliveryModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
-        onSubmit={handleAddDelivery}
       />
     </View>
   );

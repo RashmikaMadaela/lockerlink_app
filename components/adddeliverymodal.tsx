@@ -1,72 +1,67 @@
+import { addDelivery } from "@/firebase/db";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState } from "react";
 import {
-    Modal,
-    Pressable,
-    ScrollView,
-    Switch,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  Switch,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import "../global.css";
 
 type Props = {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (delivery: {
-    title: string;
-    description: string;
-    coolingNeeded: boolean;
-    otp: string;
-  }) => void;
 };
 
-export default function AddDeliveryModal({
-  visible,
-  onClose,
-  onSubmit,
-}: Props) {
+export default function AddDeliveryModal({ visible, onClose }: Props) {
   const [deliveryName, setDeliveryName] = useState("");
   const [description, setDescription] = useState("");
   const [coolingNeeded, setCoolingNeeded] = useState(false);
   const [errors, setErrors] = useState({ deliveryName: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
-  const generateOTP = () => {
-    return Math.floor(1000 + Math.random() * 9000).toString();
+  const resetForm = () => {
+    setDeliveryName("");
+    setDescription("");
+    setCoolingNeeded(false);
+    setErrors({ deliveryName: "" });
+    setSubmitError("");
   };
 
-  const handleSubmit = () => {
-    // Validate
+  const handleSubmit = async () => {
     if (!deliveryName.trim()) {
       setErrors({ deliveryName: "Delivery name is required" });
       return;
     }
 
-    // Generate OTP and locker number
-    const otp = generateOTP();
+    setIsSubmitting(true);
+    setSubmitError("");
 
-    // Submit
-    onSubmit({
+    const result = await addDelivery({
       title: deliveryName.trim(),
       description: description.trim(),
       coolingNeeded,
-      otp,
     });
 
-    // Reset form
-    setDeliveryName("");
-    setDescription("");
-    setCoolingNeeded(false);
-    setErrors({ deliveryName: "" });
+    setIsSubmitting(false);
+
+    if (!result.success) {
+      setSubmitError(result.error ?? "Failed to add delivery.");
+      return;
+    }
+
+    resetForm();
     onClose();
   };
 
   const handleClose = () => {
-    setDeliveryName("");
-    setDescription("");
-    setCoolingNeeded(false);
-    setErrors({ deliveryName: "" });
+    resetForm();
     onClose();
   };
 
@@ -162,6 +157,23 @@ export default function AddDeliveryModal({
                 </View>
               </View>
 
+              {/* Submit error */}
+              {submitError ? (
+                <View className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                  <View className="flex-row items-center">
+                    <MaterialIcons
+                      name="error"
+                      size={18}
+                      color="#ef4444"
+                      style={{ marginRight: 8 }}
+                    />
+                    <Text className="text-sm text-red-700 flex-1">
+                      {submitError}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
+
               {/* Info Box */}
               <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
                 <View className="flex-row items-start">
@@ -189,13 +201,21 @@ export default function AddDeliveryModal({
           <View className="p-6 border-t border-gray-200">
             <Pressable
               onPress={handleSubmit}
+              disabled={isSubmitting}
               style={({ pressed }) => ({
-                opacity: pressed ? 0.8 : 1,
+                opacity: pressed || isSubmitting ? 0.7 : 1,
               })}
             >
-              <View className="bg-blue-500 rounded-xl p-4 mb-4 items-center">
+              <View className="bg-blue-500 rounded-xl p-4 mb-4 items-center flex-row justify-center">
+                {isSubmitting ? (
+                  <ActivityIndicator
+                    size="small"
+                    color="#fff"
+                    style={{ marginRight: 8 }}
+                  />
+                ) : null}
                 <Text className="text-white text-base font-bold">
-                  Add Delivery
+                  {isSubmitting ? "Adding..." : "Add Delivery"}
                 </Text>
               </View>
             </Pressable>
