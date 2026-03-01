@@ -1,5 +1,6 @@
 import { claimDevice, createUserProfile, getDevice } from "@/firebase/db";
 import { auth } from "@/firebaseconfig";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
@@ -51,8 +52,8 @@ function StepIndicator({ current }: { current: number }) {
 function ErrorBanner({ message }: { message: string }) {
   if (!message) return null;
   return (
-    <View className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
-      <Text className="text-sm text-red-600 text-center">{message}</Text>
+    <View className="p-3 mb-4 border border-red-200 bg-red-50 rounded-xl">
+      <Text className="text-sm text-center text-red-600">{message}</Text>
     </View>
   );
 }
@@ -67,6 +68,8 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
   const [step1Error, setStep1Error] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
 
   // Step 2
   const [deviceId, setDeviceId] = useState("");
@@ -183,13 +186,13 @@ export default function Register() {
           onPress={() => (step > 1 ? setStep(step - 1) : router.back())}
           className="mb-6"
         >
-          <Text className="text-blue-600 font-medium">← Back</Text>
+          <Text className="font-medium text-blue-600">← Back</Text>
         </Pressable>
 
-        <Text className="text-2xl font-bold text-gray-800 mb-1">
+        <Text className="mb-1 text-2xl font-bold text-gray-800">
           Create Account
         </Text>
-        <Text className="text-sm text-gray-500 mb-6">
+        <Text className="mb-6 text-sm text-gray-500">
           {step === 1 && "Enter your account details."}
           {step === 2 && "Link your locker device."}
           {step === 3 && "Review and confirm."}
@@ -197,28 +200,28 @@ export default function Register() {
 
         <StepIndicator current={step} />
 
-        <View className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+        <View className="p-6 bg-white border border-gray-100 shadow-sm rounded-3xl">
           {/* ── STEP 1: Account Details ──────────────────────────────────── */}
           {step === 1 && (
             <>
               <ErrorBanner message={step1Error} />
 
-              <Text className="text-sm font-medium text-gray-700 mb-1">
+              <Text className="mb-1 text-sm font-medium text-gray-700">
                 Full Name
               </Text>
               <TextInput
-                className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 text-base text-gray-800"
+                className="px-4 py-3 mb-4 text-base text-gray-800 border border-gray-200 bg-gray-50 rounded-xl"
                 placeholder="John Smith"
                 autoCapitalize="words"
                 value={name}
                 onChangeText={setName}
               />
 
-              <Text className="text-sm font-medium text-gray-700 mb-1">
+              <Text className="mb-1 text-sm font-medium text-gray-700">
                 Email
               </Text>
               <TextInput
-                className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 text-base text-gray-800"
+                className="px-4 py-3 mb-4 text-base text-gray-800 border border-gray-200 bg-gray-50 rounded-xl"
                 placeholder="you@example.com"
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -227,33 +230,59 @@ export default function Register() {
                 onChangeText={setEmail}
               />
 
-              <Text className="text-sm font-medium text-gray-700 mb-1">
+              <Text className="mb-1 text-sm font-medium text-gray-700">
                 Password
               </Text>
-              <TextInput
-                className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 text-base text-gray-800"
-                placeholder="At least 6 characters"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-              />
+              <View className="flex-row items-center mb-4 border border-gray-200 bg-gray-50 rounded-xl">
+                <TextInput
+                  className="flex-1 px-4 py-3 text-base text-gray-800"
+                  placeholder="At least 6 characters"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <Pressable
+                  onPress={() => setShowPassword((v) => !v)}
+                  className="px-3"
+                  hitSlop={8}
+                >
+                  <MaterialIcons
+                    name={showPassword ? "visibility" : "visibility-off"}
+                    size={22}
+                    color="#9ca3af"
+                  />
+                </Pressable>
+              </View>
 
-              <Text className="text-sm font-medium text-gray-700 mb-1">
+              <Text className="mb-1 text-sm font-medium text-gray-700">
                 Confirm Password
               </Text>
-              <TextInput
-                className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-6 text-base text-gray-800"
-                placeholder="Re-enter password"
-                secureTextEntry
-                value={confirmPw}
-                onChangeText={setConfirmPw}
-              />
+              <View className="flex-row items-center mb-6 border border-gray-200 bg-gray-50 rounded-xl">
+                <TextInput
+                  className="flex-1 px-4 py-3 text-base text-gray-800"
+                  placeholder="Re-enter password"
+                  secureTextEntry={!showConfirmPw}
+                  value={confirmPw}
+                  onChangeText={setConfirmPw}
+                />
+                <Pressable
+                  onPress={() => setShowConfirmPw((v) => !v)}
+                  className="px-3"
+                  hitSlop={8}
+                >
+                  <MaterialIcons
+                    name={showConfirmPw ? "visibility" : "visibility-off"}
+                    size={22}
+                    color="#9ca3af"
+                  />
+                </Pressable>
+              </View>
 
               <Pressable
                 onPress={handleStep1}
-                className="bg-blue-600 rounded-xl py-4 items-center active:opacity-80"
+                className="items-center py-4 bg-blue-600 rounded-xl active:opacity-80"
               >
-                <Text className="text-white text-base font-semibold">Next</Text>
+                <Text className="text-base font-semibold text-white">Next</Text>
               </Pressable>
             </>
           )}
@@ -261,8 +290,8 @@ export default function Register() {
           {/* ── STEP 2: Device Verification ──────────────────────────────── */}
           {step === 2 && (
             <>
-              <View className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-5">
-                <Text className="text-sm text-blue-700 text-center leading-5">
+              <View className="p-4 mb-5 border border-blue-100 bg-blue-50 rounded-xl">
+                <Text className="text-sm leading-5 text-center text-blue-700">
                   Find the <Text className="font-bold">Device ID</Text> and{" "}
                   <Text className="font-bold">PIN</Text> printed on the label
                   attached to your locker device.
@@ -271,11 +300,11 @@ export default function Register() {
 
               <ErrorBanner message={step2Error} />
 
-              <Text className="text-sm font-medium text-gray-700 mb-1">
+              <Text className="mb-1 text-sm font-medium text-gray-700">
                 Device ID
               </Text>
               <TextInput
-                className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 text-base text-gray-800 tracking-widest"
+                className="px-4 py-3 mb-4 text-base tracking-widest text-gray-800 border border-gray-200 bg-gray-50 rounded-xl"
                 placeholder="e.g. LL-DEMO-01"
                 autoCapitalize="characters"
                 autoCorrect={false}
@@ -283,11 +312,11 @@ export default function Register() {
                 onChangeText={setDeviceId}
               />
 
-              <Text className="text-sm font-medium text-gray-700 mb-1">
+              <Text className="mb-1 text-sm font-medium text-gray-700">
                 Device PIN
               </Text>
               <TextInput
-                className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-6 text-base text-gray-800 tracking-widest"
+                className="px-4 py-3 mb-6 text-base tracking-widest text-gray-800 border border-gray-200 bg-gray-50 rounded-xl"
                 placeholder="e.g. AB-1234"
                 autoCapitalize="characters"
                 autoCorrect={false}
@@ -299,12 +328,12 @@ export default function Register() {
               <Pressable
                 onPress={handleStep2}
                 disabled={verifying}
-                className="bg-blue-600 rounded-xl py-4 items-center active:opacity-80"
+                className="items-center py-4 bg-blue-600 rounded-xl active:opacity-80"
               >
                 {verifying ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text className="text-white text-base font-semibold">
+                  <Text className="text-base font-semibold text-white">
                     Verify Device
                   </Text>
                 )}
@@ -318,19 +347,19 @@ export default function Register() {
               <ErrorBanner message={step3Error} />
 
               {/* Summary */}
-              <View className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-5">
-                <Text className="text-sm font-semibold text-gray-700 mb-2">
+              <View className="p-4 mb-5 border border-gray-200 bg-gray-50 rounded-xl">
+                <Text className="mb-2 text-sm font-semibold text-gray-700">
                   Account Summary
                 </Text>
                 <Text className="text-sm text-gray-600">
                   Name:{" "}
                   <Text className="font-medium text-gray-800">{name}</Text>
                 </Text>
-                <Text className="text-sm text-gray-600 mt-1">
+                <Text className="mt-1 text-sm text-gray-600">
                   Email:{" "}
                   <Text className="font-medium text-gray-800">{email}</Text>
                 </Text>
-                <Text className="text-sm text-gray-600 mt-1">
+                <Text className="mt-1 text-sm text-gray-600">
                   Device:{" "}
                   <Text className="font-medium text-gray-800">
                     {deviceId.toUpperCase()}
@@ -351,10 +380,10 @@ export default function Register() {
                   }`}
                 >
                   {consent && (
-                    <Text className="text-white text-xs font-bold">✓</Text>
+                    <Text className="text-xs font-bold text-white">✓</Text>
                   )}
                 </View>
-                <Text className="text-sm text-gray-600 flex-1 leading-5">
+                <Text className="flex-1 text-sm leading-5 text-gray-600">
                   I authorise LockerLink to accept and manage deliveries on my
                   behalf using the linked locker device, and I agree to the
                   terms of service.
@@ -364,12 +393,12 @@ export default function Register() {
               <Pressable
                 onPress={handleSubmit}
                 disabled={submitting}
-                className="bg-blue-600 rounded-xl py-4 items-center active:opacity-80"
+                className="items-center py-4 bg-blue-600 rounded-xl active:opacity-80"
               >
                 {submitting ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text className="text-white text-base font-semibold">
+                  <Text className="text-base font-semibold text-white">
                     Create Account
                   </Text>
                 )}
@@ -385,7 +414,7 @@ export default function Register() {
               Already have an account?{" "}
             </Text>
             <Pressable onPress={() => router.replace("/(auth)/login" as any)}>
-              <Text className="text-sm text-blue-600 font-semibold">
+              <Text className="text-sm font-semibold text-blue-600">
                 Sign In
               </Text>
             </Pressable>

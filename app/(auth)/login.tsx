@@ -1,4 +1,5 @@
 import { auth } from "@/firebaseconfig";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
@@ -19,6 +20,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     setError("");
@@ -85,13 +87,26 @@ export default function Login() {
           <Text className="text-sm font-medium text-gray-700 mb-1">
             Password
           </Text>
-          <TextInput
-            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-6 text-base text-gray-800"
-            placeholder="••••••••"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
+          <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl mb-6">
+            <TextInput
+              className="flex-1 px-4 py-3 text-base text-gray-800"
+              placeholder="••••••••"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <Pressable
+              onPress={() => setShowPassword((v) => !v)}
+              className="px-3"
+              hitSlop={8}
+            >
+              <MaterialIcons
+                name={showPassword ? "visibility" : "visibility-off"}
+                size={22}
+                color="#9ca3af"
+              />
+            </Pressable>
+          </View>
 
           <Pressable
             onPress={handleLogin}
