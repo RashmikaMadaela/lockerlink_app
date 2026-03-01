@@ -1,36 +1,78 @@
 import { db } from "@/firebaseconfig";
 import {
-    Delivery,
-    DeviceCommands,
-    LogEntry,
-    SlotStatus,
-    Telemetry,
+  Delivery,
+  DeviceCommands,
+  DeviceRecord,
+  LogEntry,
+  SlotStatus,
+  Telemetry,
+  UserProfile,
 } from "@/types";
 import { get, off, onValue, push, ref, set, update } from "firebase/database";
 
 // ---------------------------------------------------------------------------
-// Root path
+// Root helpers
 // ---------------------------------------------------------------------------
 const ROOT = "lockerlink";
+const dr = (deviceId: string) => `${ROOT}/devices/${deviceId}`;
+
+const deliveriesRef = (d: string) => ref(db, `${dr(d)}/deliveries`);
+const otpIndexRef = (d: string) => ref(db, `${dr(d)}/otpIndex`);
+const logsRef = (d: string) => ref(db, `${dr(d)}/logs`);
+const telemetryRef = (d: string) => ref(db, `${dr(d)}/telemetry`);
+const slotsRef = (d: string) => ref(db, `${dr(d)}/slots`);
+const userRef = (uid: string) => ref(db, `${ROOT}/users/${uid}`);
 
 // ---------------------------------------------------------------------------
-// Ref helpers
+// Auth helpers — device verification & user profiles
 // ---------------------------------------------------------------------------
-const deliveriesRef = () => ref(db, `${ROOT}/deliveries`);
-const otpIndexRef = () => ref(db, `${ROOT}/otpIndex`);
-const logsRef = () => ref(db, `${ROOT}/logs`);
-const telemetryRef = () => ref(db, `${ROOT}/device/telemetry`);
-const slotsRef = () => ref(db, `${ROOT}/device/slots`);
+
+/** Read the meta fields (pin, claimed, claimedBy) for a device. */
+export async function getDevice(
+  deviceId: string,
+): Promise<DeviceRecord | null> {
+  const snap = await get(ref(db, dr(deviceId)));
+  if (!snap.exists()) return null;
+  const val = snap.val();
+  return {
+    pin: val.pin ?? null,
+    claimed: val.claimed ?? false,
+    claimedBy: val.claimedBy ?? null,
+  };
+}
+
+/** Mark a device as claimed by a UID (called once at registration). */
+export async function claimDevice(
+  deviceId: string,
+  uid: string,
+): Promise<void> {
+  await update(ref(db, dr(deviceId)), { claimed: true, claimedBy: uid });
+}
+
+/** Write a new user profile under lockerlink/users/{uid}. */
+export async function createUserProfile(
+  uid: string,
+  data: Omit<UserProfile, "uid">,
+): Promise<void> {
+  await set(userRef(uid), { ...data, uid });
+}
+
+/** Read a user profile from lockerlink/users/{uid}. */
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+  const snap = await get(userRef(uid));
+  return snap.exists() ? (snap.val() as UserProfile) : null;
+}
 
 // ---------------------------------------------------------------------------
 // Real-time subscriptions  (each returns an unsubscribe function)
 // ---------------------------------------------------------------------------
 
-/** Subscribe to all deliveries, sorted newest-first. */
+/** Subscribe to all deliveries for a device, sorted newest-first. */
 export function subscribeToDeliveries(
+  deviceId: string,
   callback: (deliveries: Delivery[]) => void,
 ): () => void {
-  const r = deliveriesRef();
+  const r = deliveriesRef(deviceId);
   onValue(r, (snapshot) => {
     const data = snapshot.val();
     if (!data) {
@@ -49,9 +91,10 @@ export function subscribeToDeliveries(
 
 /** Subscribe to device telemetry (battery, temperature, lastSeen). */
 export function subscribeToTelemetry(
+  deviceId: string,
   callback: (telemetry: Telemetry) => void,
 ): () => void {
-  const r = telemetryRef();
+  const r = telemetryRef(deviceId);
   onValue(r, (snapshot) => {
     const data = snapshot.val();
     if (data) callback(data as Telemetry);
@@ -61,9 +104,10 @@ export function subscribeToTelemetry(
 
 /** Subscribe to slot statuses. */
 export function subscribeToSlots(
+  deviceId: string,
   callback: (slots: Record<string, SlotStatus>) => void,
 ): () => void {
-  const r = slotsRef();
+  const r = slotsRef(deviceId);
   onValue(r, (snapshot) => {
     const data = snapshot.val();
     if (data) callback(data as Record<string, SlotStatus>);
@@ -73,9 +117,10 @@ export function subscribeToSlots(
 
 /** Subscribe to event log, sorted newest-first (max 50 entries). */
 export function subscribeToLogs(
+  deviceId: string,
   callback: (logs: LogEntry[]) => void,
 ): () => void {
-  const r = logsRef();
+  const r = logsRef(deviceId);
   onValue(r, (snapshot) => {
     const data = snapshot.val();
     if (!data) {
@@ -99,17 +144,14 @@ export function subscribeToLogs(
 /**
  * Finds a free slot, generates a collision-safe 4-digit OTP, then writes
  * the delivery and otpIndex atomically via a multi-path update.
- *
- * Returns { success: true } or { success: false, error: string }.
  */
-export async function addDelivery(input: {
-  title: string;
-  description: string;
-  coolingNeeded: boolean;
-}): Promise<{ success: boolean; error?: string }> {
+export async function addDelivery(
+  deviceId: string,
+  input: { title: string; description: string; coolingNeeded: boolean },
+): Promise<{ success: boolean; error?: string }> {
   try {
-    // 1. Read current slot state (seed default values if the node is empty)
-    const slotsSnap = await get(slotsRef());
+    // 1. Read current slot state
+    const slotsSnap = await get(slotsRef(deviceId));
     const slotsData: Record<string, SlotStatus> = slotsSnap.val() ?? {
       slot_1: { occupied: false, doorStatus: "locked" },
       slot_2: { occupied: false, doorStatus: "locked" },
@@ -125,7 +167,7 @@ export async function addDelivery(input: {
     const freeSlot = freeSlotEntry[0];
 
     // 3. Generate a collision-safe 4-digit OTP
-    const otpSnap = await get(otpIndexRef());
+    const otpSnap = await get(otpIndexRef(deviceId));
     const existingOtps = new Set<string>(
       otpSnap.exists() ? Object.keys(otpSnap.val()) : [],
     );
@@ -145,7 +187,7 @@ export async function addDelivery(input: {
     }
 
     // 4. Build the delivery record
-    const newDeliveryRef = push(deliveriesRef());
+    const newDeliveryRef = push(deliveriesRef(deviceId));
     const deliveryId = newDeliveryRef.key!;
     const now = Date.now();
 
@@ -161,24 +203,22 @@ export async function addDelivery(input: {
       pickedUpAt: null,
     };
 
-    // 5. Atomic multi-path write: delivery record + OTP index
+    // 5. Atomic multi-path write
+    const base = dr(deviceId);
     const updates: Record<string, unknown> = {
-      [`${ROOT}/deliveries/${deliveryId}`]: delivery,
-      [`${ROOT}/otpIndex/${otp}`]: deliveryId,
-      // Initialise the slot nodes to locked/unoccupied if they were just seeded
-      [`${ROOT}/device/slots/${freeSlot}`]: slotsData[freeSlot],
+      [`${base}/deliveries/${deliveryId}`]: delivery,
+      [`${base}/otpIndex/${otp}`]: deliveryId,
+      [`${base}/slots/${freeSlot}`]: slotsData[freeSlot],
     };
-
-    // If cooling is needed, turn on the device cooling command
-    if (input.coolingNeeded) {
-      updates[`${ROOT}/device/commands/cooling`] = true;
-    }
+    if (input.coolingNeeded) updates[`${base}/commands/cooling`] = true;
 
     await update(ref(db), updates);
     return { success: true };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Unknown error";
-    return { success: false, error: msg };
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : "Unknown error",
+    };
   }
 }
 
@@ -191,8 +231,9 @@ export async function addDelivery(input: {
  * The ESP listens for true, executes the action, then resets the flag to false.
  */
 export async function sendCommand(
+  deviceId: string,
   key: keyof DeviceCommands,
   value: boolean = true,
 ): Promise<void> {
-  await set(ref(db, `${ROOT}/device/commands/${key}`), value);
+  await set(ref(db, `${dr(deviceId)}/commands/${key}`), value);
 }

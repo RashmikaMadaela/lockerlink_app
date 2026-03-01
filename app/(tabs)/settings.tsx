@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/AuthContext";
 import { sendCommand } from "@/firebase/db";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
@@ -47,6 +48,8 @@ function SettingItem({
 }
 
 export default function Settings() {
+  const { userProfile, signOut } = useAuth();
+
   return (
     <ScrollView className="flex-1 bg-gray-50">
       <View className="p-4">
@@ -55,8 +58,12 @@ export default function Settings() {
           <View className="bg-white rounded-full p-4 mb-3">
             <MaterialIcons name="person" size={40} color="#3b82f6" />
           </View>
-          <Text className="text-xl font-bold text-white mb-1">Heshan</Text>
-          <Text className="text-sm text-blue-100">Smart Locker Manager</Text>
+          <Text className="text-xl font-bold text-white mb-1">
+            {userProfile?.name ?? "—"}
+          </Text>
+          <Text className="text-sm text-blue-100">
+            Device: {userProfile?.deviceId ?? "—"}
+          </Text>
         </View>
 
         {/* Quick Actions */}
@@ -76,7 +83,9 @@ export default function Settings() {
                 {
                   text: "Open Door",
                   style: "destructive",
-                  onPress: () => sendCommand("openDoor", true),
+                  onPress: () =>
+                    userProfile &&
+                    sendCommand(userProfile.deviceId, "openDoor", true),
                 },
               ],
             )
@@ -96,7 +105,9 @@ export default function Settings() {
                 {
                   text: "Reset",
                   style: "destructive",
-                  onPress: () => sendCommand("reset", true),
+                  onPress: () =>
+                    userProfile &&
+                    sendCommand(userProfile.deviceId, "reset", true),
                 },
               ],
             )
@@ -158,7 +169,12 @@ export default function Settings() {
 
         {/* Logout */}
         <Pressable
-          onPress={() => alert("Logging out...")}
+          onPress={() =>
+            Alert.alert("Logout", "Are you sure you want to log out?", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Logout", style: "destructive", onPress: signOut },
+            ])
+          }
           className="bg-red-50 rounded-2xl p-4 mt-4 mb-8 border border-red-100 active:opacity-70"
         >
           <View className="flex-row items-center justify-center">

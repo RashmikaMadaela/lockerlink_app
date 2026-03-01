@@ -16,9 +16,14 @@ import "../global.css";
 type Props = {
   visible: boolean;
   onClose: () => void;
+  deviceId: string;
 };
 
-export default function AddDeliveryModal({ visible, onClose }: Props) {
+export default function AddDeliveryModal({
+  visible,
+  onClose,
+  deviceId,
+}: Props) {
   const [deliveryName, setDeliveryName] = useState("");
   const [description, setDescription] = useState("");
   const [coolingNeeded, setCoolingNeeded] = useState(false);
@@ -43,7 +48,7 @@ export default function AddDeliveryModal({ visible, onClose }: Props) {
     setIsSubmitting(true);
     setSubmitError("");
 
-    const result = await addDelivery({
+    const result = await addDelivery(deviceId, {
       title: deliveryName.trim(),
       description: description.trim(),
       coolingNeeded,

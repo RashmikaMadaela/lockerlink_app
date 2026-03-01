@@ -39,3 +39,18 @@ export type DeviceCommands = {
   reset: boolean;
   cooling: boolean;
 };
+
+export type UserProfile = {
+  uid: string;
+  name: string;
+  email: string;
+  deviceId: string;
+  consentAccepted: boolean;
+  createdAt: number;
+};
+
+export type DeviceRecord = {
+  pin: string;
+  claimed: boolean;
+  claimedBy: string | null;
+};

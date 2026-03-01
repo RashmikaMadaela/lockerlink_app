@@ -2,6 +2,7 @@ import AddDeliveryModal from "@/components/adddeliverymodal";
 import CircleButton from "@/components/circlebutton";
 import DeliveryCardSection from "@/components/deliverycardsection";
 import StatSection from "@/components/statsection";
+import { useAuth } from "@/context/AuthContext";
 import {
   subscribeToDeliveries,
   subscribeToSlots,
@@ -13,21 +14,24 @@ import { ScrollView, Text, View } from "react-native";
 import "../../global.css";
 
 export default function Home() {
+  const { userProfile } = useAuth();
   const [modalVisible, setModalVisible] = useState(false);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [telemetry, setTelemetry] = useState<Telemetry | null>(null);
   const [slots, setSlots] = useState<Record<string, SlotStatus>>({});
 
   useEffect(() => {
-    const unsubDeliveries = subscribeToDeliveries(setDeliveries);
-    const unsubTelemetry = subscribeToTelemetry(setTelemetry);
-    const unsubSlots = subscribeToSlots(setSlots);
+    if (!userProfile?.deviceId) return;
+    const id = userProfile.deviceId;
+    const unsubDeliveries = subscribeToDeliveries(id, setDeliveries);
+    const unsubTelemetry = subscribeToTelemetry(id, setTelemetry);
+    const unsubSlots = subscribeToSlots(id, setSlots);
     return () => {
       unsubDeliveries();
       unsubTelemetry();
       unsubSlots();
     };
-  }, []);
+  }, [userProfile?.deviceId]);
 
   const pendingCount = deliveries.filter((d) => d.status === "pending").length;
   const totalSlots = Math.max(Object.keys(slots).length, 2);
@@ -99,6 +103,7 @@ export default function Home() {
       <AddDeliveryModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
+        deviceId={userProfile?.deviceId ?? ""}
       />
     </View>
   );

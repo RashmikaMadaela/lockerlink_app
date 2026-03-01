@@ -1,4 +1,5 @@
 import LogCard from "@/components/logcard";
+import { useAuth } from "@/context/AuthContext";
 import { subscribeToLogs } from "@/firebase/db";
 import { LogEntry } from "@/types";
 import { formatTimestamp } from "@/utils/lockerUtils";
@@ -7,16 +8,18 @@ import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import "../../global.css";
 
 export default function History() {
+  const { userProfile } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = subscribeToLogs((data) => {
+    if (!userProfile?.deviceId) return;
+    const unsubscribe = subscribeToLogs(userProfile.deviceId, (data) => {
       setLogs(data);
       setLoading(false);
     });
     return unsubscribe;
-  }, []);
+  }, [userProfile?.deviceId]);
 
   return (
     <View className="flex-1 bg-gray-50">
