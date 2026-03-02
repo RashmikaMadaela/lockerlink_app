@@ -157,10 +157,13 @@ export default function Register() {
       // AuthContext onAuthStateChanged handles the redirect to (tabs)
     } catch (e: any) {
       const code: string = e?.code ?? "";
+      console.error("[Register] error code:", code, "message:", e?.message);
       if (code === "auth/email-already-in-use") {
         setStep3Error("An account with this email already exists.");
       } else {
-        setStep3Error("Registration failed. Please try again.");
+        setStep3Error(
+          `Registration failed: ${code || e?.message || "Unknown error"}`,
+        );
       }
     } finally {
       setSubmitting(false);
