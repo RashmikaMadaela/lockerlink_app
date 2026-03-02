@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/AuthContext";
 import { claimDevice, createUserProfile, getDevice } from "@/firebase/db";
 import { auth } from "@/firebaseconfig";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -60,6 +61,7 @@ function ErrorBanner({ message }: { message: string }) {
 
 export default function Register() {
   const router = useRouter();
+  const { refreshProfile } = useAuth();
   const [step, setStep] = useState(1);
 
   // Step 1
@@ -154,7 +156,9 @@ export default function Register() {
         consentAccepted: true,
         createdAt: Date.now(),
       });
-      // AuthContext onAuthStateChanged handles the redirect to (tabs)
+      // Force-load the profile into context now so it's available
+      // immediately on redirect (avoids race with onAuthStateChanged)
+      await refreshProfile(uid);
     } catch (e: any) {
       const code: string = e?.code ?? "";
       console.error("[Register] error code:", code, "message:", e?.message);
