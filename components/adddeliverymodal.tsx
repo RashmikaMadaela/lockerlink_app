@@ -17,12 +17,14 @@ type Props = {
   visible: boolean;
   onClose: () => void;
   deviceId: string;
+  onOtpIssued?: (payload: { otp: string; title: string }) => void;
 };
 
 export default function AddDeliveryModal({
   visible,
   onClose,
   deviceId,
+  onOtpIssued,
 }: Props) {
   const [deliveryName, setDeliveryName] = useState("");
   const [description, setDescription] = useState("");
@@ -59,6 +61,13 @@ export default function AddDeliveryModal({
     if (!result.success) {
       setSubmitError(result.error ?? "Failed to add delivery.");
       return;
+    }
+
+    if (result.otp) {
+      onOtpIssued?.({
+        otp: result.otp,
+        title: deliveryName.trim() || "New Delivery",
+      });
     }
 
     resetForm();

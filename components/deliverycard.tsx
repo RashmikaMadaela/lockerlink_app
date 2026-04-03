@@ -1,21 +1,28 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import "../global.css";
 import OTPModal from "./otpmodal";
 
 type Props = {
+  id: string;
+  slotId: string;
   title?: string;
   status?: "pending" | "delivered" | "picked-up";
   otp?: string;
+  onDelete?: (delivery: { id: string; otp: string; slotId: string }) => void;
 };
 
 export default function DeliveryCard({
+  id,
+  slotId,
   title = "Package Delivery",
   status = "pending",
   otp = "1234",
+  onDelete,
 }: Props) {
   const [showOTPModal, setShowOTPModal] = useState(false);
+  const canRevealOtp = /^\d{4}$/.test(otp);
   const statusConfig = {
     pending: {
       color: "#f59e0b",
@@ -42,16 +49,29 @@ export default function DeliveryCard({
   return (
     <>
       <Pressable
-        onPress={() => setShowOTPModal(true)}
+        onPress={() => {
+          if (canRevealOtp) setShowOTPModal(true);
+        }}
+        onLongPress={() => {
+          Alert.alert("Delete delivery", `Remove \"${title}\"?`, [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: () => onDelete?.({ id, otp, slotId }),
+            },
+          ]);
+        }}
+        delayLongPress={350}
         style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
       >
-        <View className="bg-white rounded-2xl shadow-md p-4 mb-3 border border-gray-100">
+        <View className="p-4 mb-3 bg-white border border-gray-100 shadow-md rounded-2xl">
           <View className="flex-row items-center justify-between mb-3">
             <View className="flex-1">
               <Text className="text-lg font-bold text-gray-800">{title}</Text>
             </View>
             <View
-              className="rounded-full p-2"
+              className="p-2 rounded-full"
               style={{ backgroundColor: config.bg }}
             >
               <MaterialIcons
@@ -77,24 +97,31 @@ export default function DeliveryCard({
           </View>
 
           {status === "pending" && (
-            <View className="mt-3 pt-3 border-t border-gray-100">
+            <View className="pt-3 mt-3 border-t border-gray-100">
               <View className="flex-row items-center justify-center">
                 <MaterialIcons name="touch-app" size={16} color="#3b82f6" />
-                <Text className="text-sm text-blue-500 font-medium ml-2">
-                  Tap to view OTP
+                <Text className="ml-2 text-sm font-medium text-blue-500">
+                  {canRevealOtp
+                    ? "Tap to view OTP"
+                    : "OTP is shown only when created"}
                 </Text>
               </View>
+              <Text className="mt-1 text-xs text-center text-gray-400">
+                Long press to delete
+              </Text>
             </View>
           )}
         </View>
       </Pressable>
 
-      <OTPModal
-        visible={showOTPModal}
-        onClose={() => setShowOTPModal(false)}
-        otp={otp}
-        title={title}
-      />
+      {canRevealOtp ? (
+        <OTPModal
+          visible={showOTPModal}
+          onClose={() => setShowOTPModal(false)}
+          otp={otp}
+          title={title}
+        />
+      ) : null}
     </>
   );
 }

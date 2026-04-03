@@ -1,16 +1,18 @@
 import AddDeliveryModal from "@/components/adddeliverymodal";
 import CircleButton from "@/components/circlebutton";
 import DeliveryCardSection from "@/components/deliverycardsection";
+import OTPModal from "@/components/otpmodal";
 import StatSection from "@/components/statsection";
 import { useAuth } from "@/context/AuthContext";
 import {
+  removeDelivery,
   subscribeToDeliveries,
   subscribeToSlots,
   subscribeToTelemetry,
 } from "@/firebase/db";
 import { Delivery, SlotStatus, Telemetry } from "@/types";
 import { useEffect, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Alert, ScrollView, Text, View } from "react-native";
 import "../../global.css";
 
 export default function Home() {
@@ -19,6 +21,9 @@ export default function Home() {
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [telemetry, setTelemetry] = useState<Telemetry | null>(null);
   const [slots, setSlots] = useState<Record<string, SlotStatus>>({});
+  const [issuedOtp, setIssuedOtp] = useState("");
+  const [issuedTitle, setIssuedTitle] = useState("New Delivery");
+  const [showOtpModal, setShowOtpModal] = useState(false);
 
   useEffect(() => {
     if (!userProfile?.deviceId) return;
@@ -36,6 +41,23 @@ export default function Home() {
   const pendingCount = deliveries.filter((d) => d.status === "pending").length;
   const totalSlots = Math.max(Object.keys(slots).length, 2);
   const occupiedCount = Object.values(slots).filter((s) => s.occupied).length;
+
+  const handleDelete = async (delivery: {
+    id: string;
+    otp: string;
+    slotId: string;
+  }) => {
+    const deviceId = userProfile?.deviceId;
+    if (!deviceId) return;
+
+    const result = await removeDelivery(deviceId, delivery);
+    if (!result.success) {
+      Alert.alert(
+        "Delete failed",
+        result.error ?? "Could not remove delivery.",
+      );
+    }
+  };
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -81,7 +103,10 @@ export default function Home() {
           <Text className="text-sm font-semibold text-gray-500 mb-3 ml-1">
             ACTIVE DELIVERIES
           </Text>
-          <DeliveryCardSection deliveries={deliveries} />
+          <DeliveryCardSection
+            deliveries={deliveries}
+            onDelete={handleDelete}
+          />
         </View>
       </ScrollView>
 
@@ -104,6 +129,18 @@ export default function Home() {
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         deviceId={userProfile?.deviceId ?? ""}
+        onOtpIssued={({ otp, title }) => {
+          setIssuedOtp(otp);
+          setIssuedTitle(title);
+          setShowOtpModal(true);
+        }}
+      />
+
+      <OTPModal
+        visible={showOtpModal}
+        onClose={() => setShowOtpModal(false)}
+        otp={issuedOtp}
+        title={issuedTitle}
       />
     </View>
   );

@@ -5,9 +5,10 @@ import DeliveryCard from "./deliverycard";
 
 type Props = {
   deliveries: Delivery[];
+  onDelete?: (delivery: { id: string; otp: string; slotId: string }) => void;
 };
 
-export default function DeliveryCardSection({ deliveries }: Props) {
+export default function DeliveryCardSection({ deliveries, onDelete }: Props) {
   if (deliveries.length === 0) {
     return (
       <View className="items-center justify-center py-12">
@@ -19,7 +20,7 @@ export default function DeliveryCardSection({ deliveries }: Props) {
   return (
     <View className="flex flex-col w-full">
       {deliveries.map((delivery) => (
-        <DeliveryCard key={delivery.id} {...delivery} />
+        <DeliveryCard key={delivery.id} {...delivery} onDelete={onDelete} />
       ))}
     </View>
   );
