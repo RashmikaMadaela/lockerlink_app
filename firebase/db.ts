@@ -9,6 +9,7 @@ import {
   UserProfile,
 } from "@/types";
 import { get, off, onValue, push, ref, set, update } from "firebase/database";
+import { sha256 } from "js-sha256";
 
 // ---------------------------------------------------------------------------
 // Root helpers
@@ -141,6 +142,17 @@ export function subscribeToLogs(
 // Write: add a new delivery
 // ---------------------------------------------------------------------------
 
+async function hashOtp(otp: string): Promise<string> {
+  const hashed = sha256(otp);
+
+  // Guardrail: never allow plaintext/invalid OTP storage.
+  if (hashed === otp || !/^[a-f0-9]{64}$/i.test(hashed)) {
+    throw new Error("OTP hashing failed");
+  }
+
+  return hashed;
+}
+
 /**
  * Finds a free slot, generates a collision-safe 4-digit OTP, then writes
  * the delivery and otpIndex atomically via a multi-path update.
@@ -148,7 +160,7 @@ export function subscribeToLogs(
 export async function addDelivery(
   deviceId: string,
   input: { title: string; description: string; coolingNeeded: boolean },
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; otp?: string; error?: string }> {
   try {
     // 1. Read current slot state
     const slotsSnap = await get(slotsRef(deviceId));
@@ -173,13 +185,18 @@ export async function addDelivery(
     );
 
     let otp = "";
+    let otpHash = "";
     let attempts = 0;
     do {
       otp = Math.floor(1000 + Math.random() * 9000).toString();
+      otpHash = await hashOtp(otp);
       attempts++;
-    } while (existingOtps.has(otp) && attempts < 20);
+    } while (
+      (existingOtps.has(otp) || existingOtps.has(otpHash)) &&
+      attempts < 20
+    );
 
-    if (existingOtps.has(otp)) {
+    if (existingOtps.has(otp) || existingOtps.has(otpHash)) {
       return {
         success: false,
         error: "Could not generate a unique OTP. Please try again.",
@@ -195,7 +212,7 @@ export async function addDelivery(
       title: input.title,
       description: input.description,
       status: "pending",
-      otp,
+      otp: otpHash,
       slotId: freeSlot,
       coolingNeeded: input.coolingNeeded,
       createdAt: now,
@@ -205,12 +222,51 @@ export async function addDelivery(
 
     // 5. Atomic multi-path write
     const base = dr(deviceId);
+    if (!/^[a-f0-9]{64}$/i.test(otpHash)) {
+      throw new Error(`Refusing to write non-hash OTP: ${otpHash}`);
+    }
+
     const updates: Record<string, unknown> = {
       [`${base}/deliveries/${deliveryId}`]: delivery,
-      [`${base}/otpIndex/${otp}`]: deliveryId,
+      [`${base}/otpIndex/${otpHash}`]: deliveryId,
       [`${base}/slots/${freeSlot}`]: slotsData[freeSlot],
     };
     if (input.coolingNeeded) updates[`${base}/commands/cooling`] = true;
+
+    await update(ref(db), updates);
+    // Return plaintext OTP only to the current client session.
+    return { success: true, otp };
+  } catch (e: unknown) {
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : "Unknown error",
+    };
+  }
+}
+
+/**
+ * Remove a delivery, clear its OTP index entry, and mark the slot as free.
+ */
+export async function removeDelivery(
+  deviceId: string,
+  delivery: Pick<Delivery, "id" | "otp" | "slotId">,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const base = dr(deviceId);
+    const slotSnap = await get(ref(db, `${base}/slots/${delivery.slotId}`));
+    const slotData = (slotSnap.val() as SlotStatus | null) ?? {
+      occupied: false,
+      doorStatus: "locked",
+    };
+
+    const updates: Record<string, unknown> = {
+      [`${base}/deliveries/${delivery.id}`]: null,
+      [`${base}/otpIndex/${delivery.otp}`]: null,
+      [`${base}/slots/${delivery.slotId}`]: {
+        ...slotData,
+        occupied: false,
+      },
+    };
 
     await update(ref(db), updates);
     return { success: true };
